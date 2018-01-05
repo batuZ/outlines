@@ -74,7 +74,7 @@ namespace Test01
             StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
             OSGeo.OGR.Layer dzxPolyLayer = cleanDZX(dzx);
             StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
-   
+
             //4 筛选
             OSGeo.OGR.Layer selectLayer = selectionFeatuers(slopeCleanLayer, dzxPolyLayer);
             StaticTools.msgLine($"完成！用时：{aTime.Elapsed.ToString()}\n"); aTime.Restart();
@@ -482,6 +482,63 @@ namespace Test01
 
             return outLayer;
         }
+
+        //分块清理，提高效率
+        public static OSGeo.OGR.Layer cleanLayer_Cut(OSGeo.OGR.Layer pdLayer, double minArea, double maxArea, double maxCha = 1)
+        {
+            List<CutBox> Tree = buildTree(pdLayer);
+
+
+            shpDataSet.deleteLayerByName("pdClear");
+            OSGeo.OGR.Layer outLayer = shpDataSet.CreateLayer("pdClear", pdLayer.GetSpatialRef(), pdLayer.GetGeomType(), null);
+            OSGeo.OGR.Envelope oriEnve = new OSGeo.OGR.Envelope();
+            OSGeo.OGR.Envelope nextEnve = new OSGeo.OGR.Envelope();
+            StaticTools.msgLine("clean SlopeLine...");
+            for (int c = 0; c < Tree.Count; c++)
+            {
+                CutBox cb = Tree[c];
+                int featCount = cb.pdxIDs.Count;
+
+                for (int i = 0; i < featCount - 1; i++)
+                {
+                    bool isOnly = true;
+                    OSGeo.OGR.Feature ori = pdLayer.GetFeature(cb.pdxIDs[i]);
+                    double oriArea = ori.GetGeometryRef().GetArea();
+
+                    if (oriArea < minArea || oriArea > maxArea)
+                    {
+                        //判断当前要素的面积，过小或过大时，认为其有相同的图形，不加入新的Layer
+                        isOnly = false;
+                    }
+                    else
+                    {
+                        //判断当前要素与其它要素的包围盒的对应边，差值都小于阈值时，认为是相同的图形，需要跳过
+                        //没有相同的图型时，isOnly为true ，塞到新的layer里
+                        ori.GetGeometryRef().GetEnvelope(oriEnve);
+                        for (int j = i + 1; j < featCount; j++)
+                        {
+                            pdLayer.GetFeature(cb.pdxIDs[j]).GetGeometryRef().GetEnvelope(nextEnve);
+                            if (Math.Abs(oriEnve.MaxX - nextEnve.MaxX) < maxCha &&
+                                Math.Abs(oriEnve.MaxY - nextEnve.MaxY) < maxCha &&
+                                Math.Abs(oriEnve.MinX - nextEnve.MinX) < maxCha &&
+                                Math.Abs(oriEnve.MinY - nextEnve.MinY) < maxCha)
+                            {
+                                isOnly = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (isOnly)
+                        outLayer.CreateFeature(ori);
+                    StaticTools.progress((i + 2) * 100 / featCount, $"{i + 1} / {featCount}");
+                }
+            }
+
+            if (IsDelete)
+                shpDataSet.deleteLayerByName(pdLayer.GetName());
+
+            return outLayer;
+        }
         #endregion
 
         #region 筛选
@@ -545,29 +602,32 @@ namespace Test01
         /// <param name="pdLayer"></param>
         /// <param name="dzxlayer"></param>
         /// <returns></returns>
-        static List<CutBox> buildTree(OSGeo.OGR.Layer pdLayer, OSGeo.OGR.Layer dzxlayer)
+        static List<CutBox> buildTree(OSGeo.OGR.Layer pdLayer, OSGeo.OGR.Layer dzxlayer = null)
         {
             StaticTools.msgLine("buildTree...");
             OSGeo.OGR.Layer cutLayer = createCutLayer(3000);
 
-            int cutFeatCount = cutLayer.GetFeatureCount(0);
-            int pdFeatCount = pdLayer.GetFeatureCount(0);
-            int dzFeatCount = dzxlayer.GetFeatureCount(0);
-
             //用 cutLayer 中的 Featuers 创建一个容器,容器中是对应 Featuer 的 cutBox
             List<CutBox> allBoxes = new List<CutBox>();
-            for (int cuti = 0; cuti < cutFeatCount; cuti++)
-            {
-                CutBox cb = new CutBox();
-                //把与盒子相交的等值线塞入盒子,向外Buffer一定距离，避免尴尬
-                OSGeo.OGR.Geometry cutGeom = cutLayer.GetFeature(cuti).GetGeometryRef().Buffer(5, 0);
-                for (int dzi = 0; dzi < dzFeatCount; dzi++)
-                    if (cutGeom.Intersect(dzxlayer.GetFeature(dzi).GetGeometryRef()))
-                        cb.dzxIDs.Add(dzi);
-                allBoxes.Add(cb);
-                StaticTools.progress((cuti + 1) * 100 / cutFeatCount, $"{cuti}/{cutFeatCount}");
-            }
 
+            int cutFeatCount = cutLayer.GetFeatureCount(0);
+            int pdFeatCount = pdLayer.GetFeatureCount(0);
+
+            if (dzxlayer != null)
+            {
+                int dzFeatCount = dzxlayer.GetFeatureCount(0);
+                for (int cuti = 0; cuti < cutFeatCount; cuti++)
+                {
+                    CutBox cb = new CutBox();
+                    //把与盒子相交的等值线塞入盒子,向外Buffer一定距离，避免尴尬
+                    OSGeo.OGR.Geometry cutGeom = cutLayer.GetFeature(cuti).GetGeometryRef().Buffer(5, 0);
+                    for (int dzi = 0; dzi < dzFeatCount; dzi++)
+                        if (cutGeom.Intersect(dzxlayer.GetFeature(dzi).GetGeometryRef()))
+                            cb.dzxIDs.Add(dzi);
+                    allBoxes.Add(cb);
+                    StaticTools.progress((cuti + 1) * 100 / cutFeatCount, $"{cuti}/{cutFeatCount}");
+                }
+            }
             //遍历坡度线，放入对应的cutBox
             //不会重复，要素只会放入第一个匹配上的盒子里
             for (int pdi = 0; pdi < pdFeatCount; pdi++)
@@ -660,7 +720,7 @@ namespace Test01
             string newLayerName = oldLayerName + "Clear";
             shpDataSet.deleteLayerByName(newLayerName);
             OSGeo.OGR.Layer outLayer = shpDataSet.CreateLayer(newLayerName, srs, inLayer.GetGeomType(), null);
-           
+
             int featCount = inLayer.GetFeatureCount(0);
             StaticTools.msgLine($"clean resLine... before {featCount}");
             for (int i = 0; i < featCount - 1; i++)
