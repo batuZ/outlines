@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test01", "Test01.csproj", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatrixRotation", "..\MatrixRotation\MatrixRotation.csproj", "{651DEDD1-4EC2-4500-B221-4F1321D63B50}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "序列化", "..\序列化\序列化.csproj", "{70A44B24-1C18-46EC-A589-D8AE9FD92EC1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "自动调色", "..\自动调色\自动调色.csproj", "{05D4524F-2B79-416E-A93D-579C0DE066A7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{651DEDD1-4EC2-4500-B221-4F1321D63B50}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{651DEDD1-4EC2-4500-B221-4F1321D63B50}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{651DEDD1-4EC2-4500-B221-4F1321D63B50}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70A44B24-1C18-46EC-A589-D8AE9FD92EC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70A44B24-1C18-46EC-A589-D8AE9FD92EC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70A44B24-1C18-46EC-A589-D8AE9FD92EC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70A44B24-1C18-46EC-A589-D8AE9FD92EC1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{05D4524F-2B79-416E-A93D-579C0DE066A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05D4524F-2B79-416E-A93D-579C0DE066A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05D4524F-2B79-416E-A93D-579C0DE066A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05D4524F-2B79-416E-A93D-579C0DE066A7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

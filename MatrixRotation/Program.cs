@@ -11,8 +11,8 @@ namespace MatrixRotation
         static void Main(string[] args)
         {
             Program s = new Program();
-            double[] p1 = new double[] { 4,0, 0 };
-            double[] p2 = new double[] { 4,3, 0 };
+            double[] p1 = new double[] { 4, 0, 0 };
+            double[] p2 = new double[] { 4, 3, 0 };
             s.Calculation(p1, p2);
         }
         //通过两点坐标求旋转矩阵
